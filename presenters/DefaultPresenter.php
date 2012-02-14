@@ -26,6 +26,9 @@ class DefaultPresenter extends \Venne\Application\UI\PagePresenter
 	/** @var \Venne\Doctrine\ORM\BaseRepository */
 	protected $repository;
 
+	/** @var string */
+	public $key;
+
 
 
 	public function startup()
@@ -51,11 +54,28 @@ class DefaultPresenter extends \Venne\Application\UI\PagePresenter
 		$form->addSubmit("_submit", "Registrate");
 		$form->onSuccess[] = function($form) use ($repository)
 		{
+			if ($form->presenter->page->verification == RegistrationEntity::WITHOUT_EMAIL) {
+				$form->entity->enable = true;
+			}
+			if ($form->presenter->page->verification == RegistrationEntity::WITH_EMAIL) {
+				$form->entity->enable = true;
+				$form->entity->disableByKey();
+			}
+
+			try{
+				$repository->save($form->entity);
+			}catch(\Venne\Doctrine\ORM\SqlException $e){
+				if($e->getCode()==23000){
+					$form->presenter->flashMessage("Uživatel s e-mailem " . $form->entity->email . " už existuje.");
+				}else{
+					throw $e;
+				}
+			}
+
 			if ($form->presenter->page->verification != RegistrationEntity::WITHOUT_EMAIL) {
-				$form->presenter->sendEmail($form->entity);
+				$form->presenter->sendEmail($form->entity, $form);
 				$form->presenter->flashMessage("Your account has been created, check your e-mail and confirm it.");
 			} else {
-				$form->entity->enable = true;
 				$form->presenter->flashMessage("Your account has been created and activated.");
 			}
 			$repository->save($form->entity);
@@ -66,14 +86,15 @@ class DefaultPresenter extends \Venne\Application\UI\PagePresenter
 
 
 
-	public function sendEmail(\App\CoreModule\Entities\UserEntity $user)
+	public function sendEmail(\App\CoreModule\Entities\UserEntity $user, $form)
 	{
-		$link = $this->context->parameters["basePath"] . $this->link("this", array("key"=>$user->key));
+		$url = $this->context->httpRequest->getUrl();
+		$link = $url->scheme . "://" . $url->host . $this->context->parameters["basePath"] . $this->link("this", array("key"=>$user->user->key));
 
 		$text = $this->page->text;
 		$text = strtr($text, array(
 			'{$email}' => $user->email,
-			'{$password}' => $user->password,
+			'{$password}' => $form["password"]->value,
 			'{$link}' => '<a href="'.$link.'">'.$link.'</a>'
 		));
 
@@ -93,9 +114,8 @@ class DefaultPresenter extends \Venne\Application\UI\PagePresenter
 		if (!$user) {
 			$this->setView("error");
 		} else {
-			$user->key = "";
-			if ($form->presenter->page->verification == RegistrationEntity::WITH_EMAIL) {
-				$user->enable = true;
+			$user->enableByKey($this->getParameter("key"));
+			if ($this->page->verification == RegistrationEntity::WITH_EMAIL) {
 				$this->template->activated = true;
 			}
 			$this->repository->save($user);
