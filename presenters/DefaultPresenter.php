@@ -19,7 +19,7 @@ use App\RegistrationModule\Entities\RegistrationEntity;
  *
  * @secured
  */
-class DefaultPresenter extends \Venne\Application\UI\PagePresenter
+class DefaultPresenter extends \App\CoreModule\Presenters\PagePresenter
 {
 
 
@@ -62,12 +62,12 @@ class DefaultPresenter extends \Venne\Application\UI\PagePresenter
 				$form->entity->disableByKey();
 			}
 
-			try{
+			try {
 				$repository->save($form->entity);
-			}catch(\Venne\Doctrine\ORM\SqlException $e){
-				if($e->getCode()==23000){
+			} catch (\Venne\Doctrine\ORM\SqlException $e) {
+				if ($e->getCode() == 23000) {
 					$form->presenter->flashMessage("Uživatel s e-mailem " . $form->entity->email . " už existuje.");
-				}else{
+				} else {
 					throw $e;
 				}
 			}
@@ -89,13 +89,13 @@ class DefaultPresenter extends \Venne\Application\UI\PagePresenter
 	public function sendEmail(\App\CoreModule\Entities\UserEntity $user, $form)
 	{
 		$url = $this->context->httpRequest->getUrl();
-		$link = $url->scheme . "://" . $url->host . $this->context->parameters["basePath"] . $this->link("this", array("key"=>$user->user->key));
+		$link = $url->scheme . "://" . $url->host . $this->context->parameters["basePath"] . $this->link("this", array("key" => $user->user->key));
 
 		$text = $this->page->text;
 		$text = strtr($text, array(
 			'{$email}' => $user->email,
 			'{$password}' => $form["password"]->value,
-			'{$link}' => '<a href="'.$link.'">'.$link.'</a>'
+			'{$link}' => '<a href="' . $link . '">' . $link . '</a>'
 		));
 
 		$mail = $this->context->nette->createMail();
