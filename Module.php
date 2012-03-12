@@ -32,12 +32,9 @@ class Module extends \Venne\Module\BaseModule
 	{
 		parent::configure($container);
 
-		$container->core->cmsManager->addContentType(Entities\RegistrationEntity::LINK, "registration page", array("url"), function() use($container)
+		$container->core->cmsManager->addContentType(Entities\RegistrationEntity::LINK, "registration page", array("url"), $container->registration->registrationRepository, function() use($container)
 		{
 			return $container->registration->createPageForm();
-		}, function() use ($container)
-		{
-			return $container->registration->registrationRepository->createNew();
 		});
 	}
 
