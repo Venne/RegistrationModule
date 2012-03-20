@@ -89,7 +89,7 @@ class DefaultPresenter extends \App\CoreModule\Presenters\PagePresenter
 	public function sendEmail(\App\CoreModule\Entities\UserEntity $user, $form)
 	{
 		$url = $this->context->httpRequest->getUrl();
-		$link = $url->scheme . "://" . $url->host . $this->context->parameters["basePath"] . $this->link("this", array("key" => $user->user->key));
+		$link = $url->scheme . "://" . $url->host . $this->context->parameters["basePath"] . $this->link("this", array("key" => $user->key));
 
 		$text = $this->page->text;
 		$text = strtr($text, array(
